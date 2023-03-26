@@ -21,13 +21,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Package Helm Chart
         run: |
           helm package manifests/testmod2
@@ -36,4 +29,8 @@ jobs:
         run: |
           export CHART_VERSION=$(cat manifests/testmod2/Chart.yaml | grep 'version:' | cut -d' ' -f2)
           export CHART_NAME=testmod2-${CHART_VERSION}.tgz
+          export CR_PAT=${{ secrets.GHCR_PAT }}
+          echo $CR_PAT | helm registry login ghcr.io -u ${{ github.repository_owner }} --password-stdin
           helm push $CHART_NAME oci://ghcr.io/${{ github.repository_owner }}/testmod2
+        env:
+          HELM_EXPERIMENTAL_OCI: "1"
